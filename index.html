@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Time Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tracker">
+<style>
+:root{--bg:#f2f2f7;--card:#fff;--ink:#000;--mut:#8a8a8e;--line:rgba(60,60,67,.2);--fill:rgba(118,118,128,.12);--acc:#007aff;--go:#34c759;--stop:#ff3b30;--bar:rgba(249,249,249,.94)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--ink:#fff;--mut:#98989f;--line:rgba(84,84,88,.6);--fill:rgba(118,118,128,.24);--acc:#0a84ff;--go:#30d158;--stop:#ff453a;--bar:rgba(29,29,31,.94)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(70% 45% at 10% 0%,color-mix(in srgb,var(--acc) 26%,transparent),transparent),radial-gradient(60% 40% at 100% 35%,color-mix(in srgb,var(--go) 20%,transparent),transparent),radial-gradient(70% 45% at 25% 100%,color-mix(in srgb,#ff9f0a 20%,transparent),transparent),var(--bg);color:var(--ink);font:17px/1.3 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+button{font:inherit;cursor:pointer;background:none;border:0;color:inherit;padding:0}
+button:active{opacity:.45}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--acc) 60%,transparent);outline-offset:2px}
+main{flex:1;overflow:auto;display:none}
+main.on{display:flex}
+.mut{color:var(--mut)}
+
+#track{flex-direction:column;align-items:center;justify-content:center;gap:36px;padding:24px 24px 110px;text-align:center}
+#clock{font-size:clamp(54px,18vw,88px);font-weight:200;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1}
+#big{--c:var(--go);width:min(56vw,220px);aspect-ratio:1;border-radius:50%;font-size:22px;font-weight:600;color:color-mix(in srgb,var(--c) 72%,var(--ink));background:color-mix(in srgb,var(--c) 24%,var(--glass));-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);border:.5px solid var(--rim);box-shadow:inset 0 2px 1px var(--rim),inset 0 -14px 28px color-mix(in srgb,var(--c) 22%,transparent),0 18px 40px -10px color-mix(in srgb,var(--c) 55%,transparent);transition:transform .3s cubic-bezier(.3,1.35,.5,1)}
+#big.run{--c:var(--stop)}
+#big:active{opacity:.7;transform:scale(.97)}
+#today{margin-top:4px;font-size:15px}
+
+#cal{flex-direction:column;padding:14px 16px 120px;max-width:560px;width:100%;margin:0 auto}
+.hd{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
+.hd h2{margin:0;font-size:34px;font-weight:700;line-height:1.1}
+.hd .mut{font-size:15px;margin-top:2px}
+.ctl{display:flex;align-items:center}
+.ib{width:40px;height:40px;margin-left:8px;padding-bottom:3px;border-radius:50%;font-size:24px;line-height:1;color:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;border-radius:28px;padding:10px 8px}
+.wd{font-size:12px;font-weight:600;color:var(--mut);text-align:center;padding:2px 0 6px}
+.d{min-height:58px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0}
+.d b{font-weight:400;width:30px;height:30px;line-height:30px;border-radius:50%}
+.d.t b{background:var(--acc);color:#fff;font-weight:600}
+.d small{font-size:10px;font-weight:600;color:var(--acc);min-height:12px}
+.d.h{background:color-mix(in srgb,var(--acc) var(--l),transparent)}
+.d.h small{color:var(--ink)}
+
+nav{position:fixed;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom));margin:0 auto;width:min(calc(100% - 40px),340px);display:flex;padding:5px;border-radius:999px;z-index:5}
+nav:before{content:"";position:absolute;z-index:-1;top:5px;bottom:5px;left:5px;width:calc(50% - 5px);border-radius:999px;background:color-mix(in srgb,var(--acc) 16%,var(--glass));box-shadow:inset 0 0 0 .5px var(--rim),0 2px 8px var(--shadow);transition:transform .45s cubic-bezier(.3,1.35,.5,1)}
+nav[data-v=cal]:before{transform:translateX(100%)}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0 6px;border-radius:999px;color:color-mix(in srgb,var(--ink) 65%,transparent);font-size:10px;font-weight:500}
+nav button.on{color:var(--acc)}
+nav svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+dialog{border:0;padding:0;border-radius:34px;color:var(--ink);width:min(calc(100% - 16px),520px);max-height:86dvh;margin:auto auto calc(8px + env(safe-area-inset-bottom));animation:up .4s cubic-bezier(.2,.9,.3,1)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+@keyframes up{from{transform:translateY(100%)}}
+@keyframes pop{from{transform:scale(1.1);opacity:0}}
+@media(prefers-reduced-motion:reduce){dialog{animation:none!important}}
+#sheet{padding:10px 18px 18px}
+#sheet:before{content:"";display:block;width:36px;height:5px;border-radius:3px;background:color-mix(in srgb,var(--mut) 55%,transparent);margin:0 auto 6px}
+.bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:44px}
+.bar b{font-weight:600}
+.bar button{color:var(--acc);padding:8px 16px;border-radius:999px;background:color-mix(in srgb,var(--card) 55%,transparent);box-shadow:inset 0 .5px 0 var(--rim),0 2px 8px var(--shadow)}
+.bar button:first-child{justify-self:start}
+.bar button:last-child{justify-self:end;font-weight:600;background:var(--acc);color:#fff}
+.grp{background:color-mix(in srgb,var(--card) 55%,transparent);border-radius:20px;margin-top:10px;overflow:hidden}
+.row,.f{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 16px}
+.row+.row,.f+.f{border-top:.5px solid var(--line)}
+.ed{flex:1;display:flex;justify-content:space-between;align-items:center;min-height:48px;text-align:left;font-variant-numeric:tabular-nums}
+.ed .mut{font-size:15px}
+.del{color:var(--stop);font-size:15px}
+.f span{flex:1}
+input{border:0;border-radius:8px;background:var(--fill);color:var(--ink);font:inherit;padding:6px 8px;min-height:34px}
+.red{display:block;width:100%;min-height:48px;margin-top:20px;border-radius:999px;background:color-mix(in srgb,var(--card) 55%,transparent);color:var(--stop);font-weight:600}
+#err{color:var(--stop);font-size:14px;margin:8px 4px 0;min-height:1.3em}
+.empty{padding:18px 16px;color:var(--mut);text-align:center}
+
+#ask{width:280px;margin:auto;border-radius:30px;text-align:center;animation:pop .25s cubic-bezier(.3,1.3,.5,1)}
+#ask p{margin:0;padding:18px 16px 16px}
+#ask p b{display:block;font-weight:600}
+#ask p span{font-size:13px}
+.ab{display:flex;gap:8px;padding:0 14px 14px}
+.ab button{flex:1;padding:12px;border-radius:999px;background:var(--fill)}
+.ab button+button{background:color-mix(in srgb,var(--stop) 16%,transparent);color:var(--stop);font-weight:600}
+
+:root{--glass:rgba(255,255,255,.4);--glass2:rgba(255,255,255,.62);--rim:rgba(255,255,255,.7);--shadow:rgba(30,40,80,.16)}
+@media(prefers-color-scheme:dark){:root{--glass:rgba(60,60,68,.38);--glass2:rgba(40,40,46,.66);--rim:rgba(255,255,255,.2);--shadow:rgba(0,0,0,.5)}}
+nav,.ib,.grid,.exp,dialog,#ask{background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);border:.5px solid var(--rim);box-shadow:inset 0 1px 0 var(--rim),0 8px 28px var(--shadow)}
+dialog,#ask{background:var(--glass2);-webkit-backdrop-filter:blur(34px) saturate(190%);backdrop-filter:blur(34px) saturate(190%)}
+dialog::backdrop{background:rgba(0,0,0,.25)}
+@media(prefers-reduced-motion:reduce){nav:before,#big{transition:none}}
+.exp{display:flex;align-items:center;justify-content:center;gap:8px;margin:16px auto 0;padding:11px 22px;border-radius:999px;color:var(--acc);font-weight:600}
+.exp svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+
+<main id="track" class="on">
+  <div id="clock">00:00:00</div>
+  <button id="big" aria-live="polite">Start</button>
+  <div>
+    <div id="info"></div>
+    <div id="today" class="mut"></div>
+  </div>
+</main>
+
+<main id="cal">
+  <div class="hd">
+    <div><h2 id="mon"></h2><div id="mtot" class="mut"></div></div>
+    <div class="ctl">
+      <button class="ib" data-a="prev" aria-label="Previous month">‹</button>
+      <button class="ib" data-a="next" aria-label="Next month">›</button>
+      <button class="ib p" data-a="add" aria-label="Add entry for today">+</button>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <button class="exp" data-a="export"><svg viewBox="0 0 24 24"><path d="M12 15V3.5M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>Export CSV</button>
+</main>
+
+<nav>
+  <button data-v="track" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 3h5"/></svg>Track</button>
+  <button data-v="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Calendar</button>
+</nav>
+
+<dialog id="dlg"><div id="sheet"></div></dialog>
+<dialog id="ask">
+  <p><b>Delete entry?</b><span class="mut">This can't be undone.</span></p>
+  <div class="ab"><button data-a="no">Cancel</button><button data-a="yes">Delete</button></div>
+</dialog>
+
+<script>
+const $=s=>document.querySelector(s),KEY='tt:v1',pad=n=>String(n).padStart(2,'0');
+let E=[];try{E=JSON.parse(localStorage.getItem(KEY))||[]}catch{}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(E))}catch{}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const dk=t=>{const d=new Date(t);return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+const hm=t=>{const d=new Date(t);return`${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const li=t=>`${dk(t)}T${hm(t)}`;
+const dur=ms=>{const m=Math.round(ms/6e4),h=Math.floor(m/60);return h?`${h}h ${pad(m%60)}m`:`${m}m`};
+const clock=ms=>{const s=Math.floor(ms/1e3);return`${pad(Math.floor(s/3600))}:${pad(Math.floor(s/60)%60)}:${pad(s%60)}`};
+const len=e=>(e.end??Date.now())-e.start;
+const running=()=>E.find(e=>e.end==null);
+const total=k=>E.filter(e=>dk(e.start)===k).reduce((s,e)=>s+len(e),0);
+
+/* Track */
+function renderTrack(){
+  const r=running(),b=$('#big');
+  b.textContent=r?'Stop':'Start';b.classList.toggle('run',!!r);
+  $('#clock').textContent=clock(r?Date.now()-r.start:0);
+  $('#info').textContent=r?`Running since ${hm(r.start)}`:'Ready when you are';
+  $('#today').textContent=`${dur(total(dk(Date.now())))} tracked today`;
+}
+$('#big').onclick=()=>{
+  const r=running();
+  if(r)r.end=Date.now();else E.push({id:uid(),start:Date.now(),end:null});
+  save();renderTrack();navigator.vibrate?.(15);
+};
+
+/* Calendar */
+let M=new Date();M.setDate(1);
+function renderCal(){
+  const y=M.getFullYear(),m=M.getMonth(),n=new Date(y,m+1,0).getDate(),off=(new Date(y,m,1).getDay()+6)%7,td=dk(Date.now());
+  let mt=0,h='';
+  for(let i=0;i<7;i++)h+=`<div class="wd">${new Date(2024,0,1+i).toLocaleDateString(undefined,{weekday:'short'})}</div>`;
+  h+='<div></div>'.repeat(off);
+  for(let d=1;d<=n;d++){
+    const k=`${y}-${pad(m+1)}-${pad(d)}`,t=total(k);mt+=t;
+    const l=t?Math.round(12+Math.min(t/288e5,1)*40):0;
+    h+=`<button class="d${k===td?' t':''}${t?' h':''}" data-a="day" data-k="${k}" style="--l:${l}%"><b>${d}</b><small>${t?dur(t):''}</small></button>`;
+  }
+  $('#grid').innerHTML=h;
+  $('#mon').textContent=M.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  $('#mtot').textContent=mt?`${dur(mt)} this month`:'Nothing tracked yet';
+}
+
+/* Day sheet: list of entries, or an add/edit form */
+let cur={},pend=null;
+function sheet(k,edit){
+  cur={k,edit};
+  const title=new Date(k+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+  let h;
+  if(edit===undefined){
+    const L=E.filter(e=>dk(e.start)===k).sort((a,b)=>a.start-b.start);
+    h=`<div class="bar"><button data-a="new">Add</button><b>${title}</b><button data-a="close">Done</button></div>`;
+    h+=L.length?'<div class="grp">'+L.map(e=>`<div class="row"><button class="ed" data-a="edit" data-id="${e.id}"><span>${hm(e.start)} – ${e.end==null?'running':hm(e.end)+(dk(e.end)!==k?' (+1)':'')}</span><span class="mut">${dur(len(e))}</span></button><button class="del" data-a="del" data-id="${e.id}">Delete</button></div>`).join('')+'</div>'
+      :'<div class="grp"><div class="empty">No entries yet. Tap Add to create one.</div></div>';
+  }else{
+    const isNew=edit==='new',e=isNew?{start:new Date(k+'T08:00').getTime(),end:new Date(k+'T16:00').getTime()}:E.find(x=>x.id===edit);
+    h=`<div class="bar"><button data-a="back">Cancel</button><b>${isNew?'New entry':'Edit entry'}</b><button data-a="save">Save</button></div><div class="grp"><label class="f"><span>Start</span><input type="datetime-local" id="fs" value="${li(e.start)}"></label>`;
+    if(e.end!=null)h+=`<label class="f"><span>End</span><input type="datetime-local" id="fe" value="${li(e.end)}"></label>`;
+    h+='</div><p id="err"></p>';
+    if(!isNew)h+=`<button class="red" data-a="del" data-id="${edit}">Delete entry</button>`;
+  }
+  $('#sheet').innerHTML=h;
+  if(!$('#dlg').open)$('#dlg').showModal();
+}
+function saveForm(){
+  const s=new Date($('#fs').value).getTime(),en=$('#fe')?new Date($('#fe').value).getTime():null;
+  if(isNaN(s)||(en!==null&&isNaN(en))){$('#err').textContent='Enter a valid start and end time.';return}
+  if(en!==null&&en<=s){$('#err').textContent='The end time must be after the start time.';return}
+  if(cur.edit==='new')E.push({id:uid(),start:s,end:en});
+  else{const x=E.find(v=>v.id===cur.edit);x.start=s;if(en!==null)x.end=en}
+  save();sheet(dk(s));
+}
+
+/* CSV export */
+const stamp=t=>`${dk(t)} ${hm(t)}`;
+async function exportCsv(){
+  if(!E.length){$('#mtot').textContent='Nothing to export yet';setTimeout(renderCal,2000);return}
+  const rows=[['Start','End','Duration (min)']];
+  [...E].sort((a,b)=>a.start-b.start).forEach(e=>rows.push([stamp(e.start),e.end==null?'':stamp(e.end),Math.round(len(e)/6e4)]));
+  const csv='\uFEFF'+rows.map(r=>r.join(',')).join('\r\n')+'\r\n';
+  const name=`time-tracker-${dk(Date.now())}.csv`,file=new File([csv],name,{type:'text/csv'});
+  try{
+    if(matchMedia('(pointer:coarse)').matches&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return}
+  }catch(err){if(err.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* Events */
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-a],[data-v]');if(!b)return;
+  if(b.dataset.v)return show(b.dataset.v);
+  const a=b.dataset.a,id=b.dataset.id;
+  if(a==='prev'||a==='next'){M.setMonth(M.getMonth()+(a==='next'?1:-1));renderCal()}
+  else if(a==='add')sheet(dk(Date.now()),'new');
+  else if(a==='export')exportCsv();
+  else if(a==='day')sheet(b.dataset.k);
+  else if(a==='new')sheet(cur.k,'new');
+  else if(a==='edit')sheet(cur.k,id);
+  else if(a==='back')sheet(cur.k);
+  else if(a==='save')saveForm();
+  else if(a==='close')$('#dlg').close();
+  else if(a==='del'){pend=id;$('#ask').showModal()}
+  else if(a==='yes'){E=E.filter(e=>e.id!==pend);save();$('#ask').close();sheet(cur.k)}
+  else if(a==='no')$('#ask').close();
+});
+$('#dlg').addEventListener('click',e=>{if(e.target.id==='dlg')e.target.close()});
+$('#dlg').addEventListener('close',()=>{renderCal();renderTrack()});
+
+function show(v){$('nav').dataset.v=v;
+  document.querySelectorAll('main').forEach(m=>m.classList.toggle('on',m.id===v));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  v==='cal'?renderCal():renderTrack();
+}
+setInterval(()=>{if($('#track').classList.contains('on'))renderTrack()},1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderTrack()});
+renderTrack();
+
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
