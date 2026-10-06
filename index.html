@@ -61,9 +61,9 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 @media(prefers-reduced-motion:reduce){dialog{animation:none!important}}
 #sheet{padding:10px 18px 18px}
 #sheet:before{content:"";display:block;width:36px;height:5px;border-radius:3px;background:color-mix(in srgb,var(--mut) 55%,transparent);margin:0 auto 6px}
-.bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:44px}
-.bar b{font-weight:600}
-.bar button{color:var(--acc);padding:8px 16px;border-radius:999px;background:color-mix(in srgb,var(--card) 55%,transparent);box-shadow:inset 0 .5px 0 var(--rim),0 2px 8px var(--shadow)}
+.bar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;min-height:44px}
+.bar b{font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar button{white-space:nowrap;color:var(--acc);padding:8px 16px;border-radius:999px;background:color-mix(in srgb,var(--card) 55%,transparent);box-shadow:inset 0 .5px 0 var(--rim),0 2px 8px var(--shadow)}
 .bar button:first-child{justify-self:start}
 .bar button:last-child{justify-self:end;font-weight:600;background:var(--acc);color:#fff}
 .grp{background:color-mix(in srgb,var(--card) 55%,transparent);border-radius:20px;margin-top:10px;overflow:hidden}
@@ -111,24 +111,24 @@ dialog::backdrop{background:rgba(0,0,0,.25)}
   <div class="hd">
     <div><h2 id="mon"></h2><div id="mtot" class="mut"></div></div>
     <div class="ctl">
-      <button class="ib" data-a="prev" aria-label="Previous month">‹</button>
-      <button class="ib" data-a="next" aria-label="Next month">›</button>
-      <button class="ib p" data-a="add" aria-label="Add entry for today">+</button>
+      <button class="ib" data-a="prev" data-al="prev" aria-label="Previous month">‹</button>
+      <button class="ib" data-a="next" data-al="next" aria-label="Next month">›</button>
+      <button class="ib p" data-a="add" data-al="add" aria-label="Add entry for today">+</button>
     </div>
   </div>
   <div class="grid" id="grid"></div>
-  <button class="exp" data-a="export"><svg viewBox="0 0 24 24"><path d="M12 15V3.5M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>Export CSV</button>
+  <button class="exp" data-a="export"><svg viewBox="0 0 24 24"><path d="M12 15V3.5M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg><span data-t="exp">Export CSV</span></button>
 </main>
 
 <nav>
-  <button data-v="track" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 3h5"/></svg>Track</button>
-  <button data-v="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Calendar</button>
+  <button data-v="track" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 3h5"/></svg><span data-t="tab1">Track</span></button>
+  <button data-v="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span data-t="tab2">Calendar</span></button>
 </nav>
 
 <dialog id="dlg"><div id="sheet"></div></dialog>
 <dialog id="ask">
-  <p><b>Delete entry?</b><span class="mut">This can't be undone.</span></p>
-  <div class="ab"><button data-a="no">Cancel</button><button data-a="yes">Delete</button></div>
+  <p><b data-t="delQ">Delete entry?</b><span class="mut" data-t="undo">This can't be undone.</span></p>
+  <div class="ab"><button data-a="no" data-t="cancel">Cancel</button><button data-a="yes" data-t="del">Delete</button></div>
 </dialog>
 
 <script>
@@ -145,13 +145,21 @@ const len=e=>(e.end??Date.now())-e.start;
 const running=()=>E.find(e=>e.end==null);
 const total=k=>E.filter(e=>dk(e.start)===k).reduce((s,e)=>s+len(e),0);
 
+/* Language: German if the system language is German, otherwise English */
+const LANG=/^de/i.test(navigator.languages?.[0]||navigator.language||'')?'de':'en';
+const T={
+en:{title:'Time Tracker',start:'Start',stop:'Stop',since:x=>`Running since ${x}`,ready:'Ready when you are',today:d=>`${d} tracked today`,tab1:'Track',tab2:'Calendar',prev:'Previous month',next:'Next month',add:'Add entry for today',exp:'Export CSV',delQ:'Delete entry?',undo:"This can't be undone.",cancel:'Cancel',del:'Delete',none:'Nothing tracked yet',month:d=>`${d} this month`,nothing:'Nothing to export yet',new:'Add',done:'Done',empty:'No entries yet. Tap Add to create one.',running:'running',newT:'New entry',editT:'Edit entry',save:'Save',from:'Start',to:'End',errV:'Enter a valid start and end time.',errO:'The end time must be after the start time.',delE:'Delete entry',csvH:['Start','End','Duration (min)'],sep:',',file:'time-tracker'},
+de:{title:'Zeiterfassung',start:'Start',stop:'Stopp',since:x=>`Läuft seit ${x}`,ready:'Bereit',today:d=>`Heute ${d} erfasst`,tab1:'Stoppuhr',tab2:'Kalender',prev:'Voriger Monat',next:'Nächster Monat',add:'Eintrag für heute hinzufügen',exp:'CSV exportieren',delQ:'Eintrag löschen?',undo:'Das kann nicht rückgängig gemacht werden.',cancel:'Abbrechen',del:'Löschen',none:'Noch nichts erfasst',month:d=>`${d} in diesem Monat`,nothing:'Noch nichts zu exportieren',new:'Neu',done:'Fertig',empty:'Noch keine Einträge. Tippe auf „Neu“, um einen zu erstellen.',running:'läuft',newT:'Neuer Eintrag',editT:'Bearbeiten',save:'Sichern',from:'Beginn',to:'Ende',errV:'Bitte einen gültigen Beginn und ein gültiges Ende eingeben.',errO:'Das Ende muss nach dem Beginn liegen.',delE:'Eintrag löschen',csvH:['Beginn','Ende','Dauer (Min.)'],sep:';',file:'zeiterfassung'}
+};
+const t=k=>T[LANG][k];
+
 /* Track */
 function renderTrack(){
   const r=running(),b=$('#big');
-  b.textContent=r?'Stop':'Start';b.classList.toggle('run',!!r);
+  b.textContent=r?t('stop'):t('start');b.classList.toggle('run',!!r);
   $('#clock').textContent=clock(r?Date.now()-r.start:0);
-  $('#info').textContent=r?`Running since ${hm(r.start)}`:'Ready when you are';
-  $('#today').textContent=`${dur(total(dk(Date.now())))} tracked today`;
+  $('#info').textContent=r?t('since')(hm(r.start)):t('ready');
+  $('#today').textContent=t('today')(dur(total(dk(Date.now()))));
 }
 $('#big').onclick=()=>{
   const r=running();
@@ -173,7 +181,7 @@ function renderCal(){
   }
   $('#grid').innerHTML=h;
   $('#mon').textContent=M.toLocaleDateString(undefined,{month:'long',year:'numeric'});
-  $('#mtot').textContent=mt?`${dur(mt)} this month`:'Nothing tracked yet';
+  $('#mtot').textContent=mt?t('month')(dur(mt)):t('none');
 }
 
 /* Day sheet: list of entries, or an add/edit form */
@@ -184,23 +192,23 @@ function sheet(k,edit){
   let h;
   if(edit===undefined){
     const L=E.filter(e=>dk(e.start)===k).sort((a,b)=>a.start-b.start);
-    h=`<div class="bar"><button data-a="new">Add</button><b>${title}</b><button data-a="close">Done</button></div>`;
-    h+=L.length?'<div class="grp">'+L.map(e=>`<div class="row"><button class="ed" data-a="edit" data-id="${e.id}"><span>${hm(e.start)} – ${e.end==null?'running':hm(e.end)+(dk(e.end)!==k?' (+1)':'')}</span><span class="mut">${dur(len(e))}</span></button><button class="del" data-a="del" data-id="${e.id}">Delete</button></div>`).join('')+'</div>'
-      :'<div class="grp"><div class="empty">No entries yet. Tap Add to create one.</div></div>';
+    h=`<div class="bar"><button data-a="new">${t('new')}</button><b>${title}</b><button data-a="close">${t('done')}</button></div>`;
+    h+=L.length?'<div class="grp">'+L.map(e=>`<div class="row"><button class="ed" data-a="edit" data-id="${e.id}"><span>${hm(e.start)} – ${e.end==null?t('running'):hm(e.end)+(dk(e.end)!==k?' (+1)':'')}</span><span class="mut">${dur(len(e))}</span></button><button class="del" data-a="del" data-id="${e.id}">${t('del')}</button></div>`).join('')+'</div>'
+      :'<div class="grp"><div class="empty">'+t('empty')+'</div></div>';
   }else{
     const isNew=edit==='new',e=isNew?{start:new Date(k+'T08:00').getTime(),end:new Date(k+'T16:00').getTime()}:E.find(x=>x.id===edit);
-    h=`<div class="bar"><button data-a="back">Cancel</button><b>${isNew?'New entry':'Edit entry'}</b><button data-a="save">Save</button></div><div class="grp"><label class="f"><span>Start</span><input type="datetime-local" id="fs" value="${li(e.start)}"></label>`;
-    if(e.end!=null)h+=`<label class="f"><span>End</span><input type="datetime-local" id="fe" value="${li(e.end)}"></label>`;
+    h=`<div class="bar"><button data-a="back">${t('cancel')}</button><b>${isNew?t('newT'):t('editT')}</b><button data-a="save">${t('save')}</button></div><div class="grp"><label class="f"><span>${t('from')}</span><input type="datetime-local" id="fs" value="${li(e.start)}"></label>`;
+    if(e.end!=null)h+=`<label class="f"><span>${t('to')}</span><input type="datetime-local" id="fe" value="${li(e.end)}"></label>`;
     h+='</div><p id="err"></p>';
-    if(!isNew)h+=`<button class="red" data-a="del" data-id="${edit}">Delete entry</button>`;
+    if(!isNew)h+=`<button class="red" data-a="del" data-id="${edit}">${t('delE')}</button>`;
   }
   $('#sheet').innerHTML=h;
   if(!$('#dlg').open)$('#dlg').showModal();
 }
 function saveForm(){
   const s=new Date($('#fs').value).getTime(),en=$('#fe')?new Date($('#fe').value).getTime():null;
-  if(isNaN(s)||(en!==null&&isNaN(en))){$('#err').textContent='Enter a valid start and end time.';return}
-  if(en!==null&&en<=s){$('#err').textContent='The end time must be after the start time.';return}
+  if(isNaN(s)||(en!==null&&isNaN(en))){$('#err').textContent=t('errV');return}
+  if(en!==null&&en<=s){$('#err').textContent=t('errO');return}
   if(cur.edit==='new')E.push({id:uid(),start:s,end:en});
   else{const x=E.find(v=>v.id===cur.edit);x.start=s;if(en!==null)x.end=en}
   save();sheet(dk(s));
@@ -209,11 +217,11 @@ function saveForm(){
 /* CSV export */
 const stamp=t=>`${dk(t)} ${hm(t)}`;
 async function exportCsv(){
-  if(!E.length){$('#mtot').textContent='Nothing to export yet';setTimeout(renderCal,2000);return}
-  const rows=[['Start','End','Duration (min)']];
+  if(!E.length){$('#mtot').textContent=t('nothing');setTimeout(renderCal,2000);return}
+  const rows=[t('csvH')];
   [...E].sort((a,b)=>a.start-b.start).forEach(e=>rows.push([stamp(e.start),e.end==null?'':stamp(e.end),Math.round(len(e)/6e4)]));
-  const csv='\uFEFF'+rows.map(r=>r.join(',')).join('\r\n')+'\r\n';
-  const name=`time-tracker-${dk(Date.now())}.csv`,file=new File([csv],name,{type:'text/csv'});
+  const csv='\uFEFF'+rows.map(r=>r.join(t('sep'))).join('\r\n')+'\r\n';
+  const name=`${t('file')}-${dk(Date.now())}.csv`,file=new File([csv],name,{type:'text/csv'});
   try{
     if(matchMedia('(pointer:coarse)').matches&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return}
   }catch(err){if(err.name==='AbortError')return}
@@ -250,6 +258,9 @@ function show(v){$('nav').dataset.v=v;
 }
 setInterval(()=>{if($('#track').classList.contains('on'))renderTrack()},1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderTrack()});
+document.documentElement.lang=LANG;document.title=t('title');
+document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
+document.querySelectorAll('[data-al]').forEach(e=>e.setAttribute('aria-label',t(e.dataset.al)));
 renderTrack();
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
